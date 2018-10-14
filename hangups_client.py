@@ -164,8 +164,15 @@ global event_queue
 event_queue = queue.Queue()
 global user_list, conv_list
 
+TYPING_STATUS = \
+{
+    hangups.parsers.TypingStatusMessage.TYPING_TYPE_STARTED: "typing_started",
+    hangups.parsers.TypingStatusMessage.TYPING_TYPE_PAUSED: "typing_paused",
+    hangups.parsers.TypingStatusMessage.TYPING_TYPE_STOPPED: "typing_stopped"
+}
+
 def on_event(conv_event):
-    global conv_list, event_queue
+
     #pprint(getmembers(conv_event))
     if isinstance(conv_event, hangups.ChatMessageEvent):
         conv = conv_list.get(conv_event.conversation_id)
@@ -176,6 +183,27 @@ def on_event(conv_event):
                 'status':'success',
                 'type':'message',
                 'content':conv_event.text,
+                'conversation_id': conv.id_,
+                'conversation_name':get_conv_name(conv),
+                'photo_url':user.photo_url,
+                'user':user.full_name,
+                'self_user_id':user_list._self_user.id_.chat_id,
+                'user_id':{'chat_id':conv_event.user_id.chat_id, 'gaia_id':conv_event.user_id.gaia_id}
+            })
+            print_jsonmsg(msgJson)
+
+        except Exception as error:
+            print(repr(error))
+    elif isinstance(conv_event, hangups.parsers.TypingStatusMessage):
+        conv = conv_list.get(conv_event.conversation_id)
+        user = conv.get_user(conv_event.user_id)
+        typing_status = TYPING_STATUS[conv_event.status] if conv_event.status in TYPING_STATUS else "unknown"
+        # print("Typing indicator:", conv_event)
+        try:
+            msgJson = json.dumps({
+                'status':'success',
+                'type':"typing",
+                'typing':typing_status,
                 'conversation_id': conv.id_,
                 'conversation_name':get_conv_name(conv),
                 'photo_url':user.photo_url,

@@ -64,6 +64,30 @@ class App extends MatrixPuppetBridgeBase {
           sendStatusMsg({}, "incoming message handling error:", err);
         }
       }
+      else if(data && data.type === 'typing')
+      {
+        try {
+          this.threadInfo[data.conversation_id] = {
+            conversation_name: data.conversation_name,
+          };
+          debugVerbose("incoming typing:", data);
+          const isMe = data.user_id.chat_id === data.self_user_id;
+          const payload = {
+            roomId: data.conversation_id,
+            senderName: data.user,
+            senderId: isMe ? undefined : data.user_id.chat_id,
+            text: data.content,
+            avatarUrl: data.photo_url,
+          };
+          return this.handleThirdPartyRoomMessage(payload).catch(err => {
+            console.log("handleThirdPartyRoomMessage error", err);
+            sendStatusMsg({}, "handleThirdPartyRoomMessage error", err);
+          });
+        } catch(er) {
+          console.log("incoming message handling error:", er);
+          sendStatusMsg({}, "incoming message handling error:", err);
+        }
+      }
 
       // Message data format:
       /*{ user_id:
