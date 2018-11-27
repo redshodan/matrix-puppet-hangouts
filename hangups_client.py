@@ -164,13 +164,6 @@ global event_queue
 event_queue = queue.Queue()
 global user_list, conv_list
 
-TYPING_STATUS = \
-{
-    hangups.parsers.TypingStatusMessage.TYPING_TYPE_STARTED: "typing_started",
-    hangups.parsers.TypingStatusMessage.TYPING_TYPE_PAUSED: "typing_paused",
-    hangups.parsers.TypingStatusMessage.TYPING_TYPE_STOPPED: "typing_stopped"
-}
-
 def on_event(conv_event):
 
     #pprint(getmembers(conv_event))
@@ -194,32 +187,44 @@ def on_event(conv_event):
 
         except Exception as error:
             print(repr(error))
-    elif isinstance(conv_event, hangups.parsers.TypingStatusMessage):
-        conv = conv_list.get(conv_event.conversation_id)
-        user = conv.get_user(conv_event.user_id)
-        typing_status = TYPING_STATUS[conv_event.status] if conv_event.status in TYPING_STATUS else "unknown"
-        # print("Typing indicator:", conv_event)
-        try:
-            msgJson = json.dumps({
-                'status':'success',
-                'type':"typing",
-                'typing':typing_status,
-                'conversation_id': conv.id_,
-                'conversation_name':get_conv_name(conv),
-                'photo_url':user.photo_url,
-                'user':user.full_name,
-                'self_user_id':user_list._self_user.id_.chat_id,
-                'user_id':{'chat_id':conv_event.user_id.chat_id, 'gaia_id':conv_event.user_id.gaia_id}
-            })
-            print_jsonmsg(msgJson)
-
-        except Exception as error:
-            print(repr(error))
-
 
         #event_queue.put(msgJson)
     #else:
         #print(conv_event.user_id)
+
+
+TYPING_STATUS = \
+{
+    hangups.TYPING_TYPE_STARTED: "typing_started",
+    hangups.TYPING_TYPE_PAUSED: "typing_stopped",
+    hangups.TYPING_TYPE_STOPPED: "typing_stopped"
+}
+
+
+def on_typing(conv_event):
+    conv = conv_list.get(conv_event.conv_id)
+    user = conv.get_user(conv_event.user_id)
+    if conv_event.status in TYPING_STATUS:
+        typing_status = TYPING_STATUS[conv_event.status]
+    else:
+        typing_status = "typing_stopped"
+    try:
+        msgJson = json.dumps({
+            'status': 'success',
+            'type': "typing",
+            'typing': typing_status,
+            'conversation_id': conv.id_,
+            'conversation_name': get_conv_name(conv),
+            'photo_url': user.photo_url,
+            'user': user.full_name,
+            'self_user_id': user_list._self_user.id_.chat_id,
+            'user_id': {'chat_id': conv_event.user_id.chat_id,
+                        'gaia_id': conv_event.user_id.gaia_id}
+        })
+        print_jsonmsg(msgJson)
+    except Exception as error:
+        print(repr(error))
+
 
 def _on_message_sent(future):
     """Handle showing an error if a message fails to send."""
@@ -246,6 +251,7 @@ def listen_events(client, _):
     #print("my user id");
     #print(user_list._self_user.id_);
     conv_list.on_event.add_observer(on_event)
+    conv_list.on_typing.add_observer(on_typing)
 
     #print(client._client_id);
     #print(client._email);
