@@ -1,4 +1,6 @@
 {
+  "serviceName": "Hangouts",
+  "servicePrefix": "hangouts",
   "registrationPath": "hangouts-registration.yaml",
   "port": 8090,
   "bridge": {

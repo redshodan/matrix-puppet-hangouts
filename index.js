@@ -14,10 +14,10 @@ const debugVerbose = debug('verbose:matrix-puppet:hangouts:index');
 
 class App extends MatrixPuppetBridgeBase {
   getServicePrefix() {
-    return "hangouts";
+    return config.servicePrefix;
   }
   getServiceName() {
-    return "Hangouts";
+    return config.serviceName;
   }
   defaultDeduplicationTag() {
     return " \u200b"; // Unicode Character 'ZERO WIDTH SPACE'
